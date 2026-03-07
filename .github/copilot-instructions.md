@@ -1,6 +1,6 @@
 # Pneumademy — GitHub Copilot Instructions
 
-> Version: 1.0 | Last Updated: Auth system complete
+> Version: 1.1 | Last Updated: Landing page & community features complete
 > Maintained as a living document. Update at each major milestone.
 
 ---
@@ -9,24 +9,57 @@
 
 Pneumademy is a **private Christian discipleship platform** built for a church. It hosts spiritual growth courses in the form of videos and text content that can **only be accessed on the platform** (no downloads, no external sharing). It is an internal project managed by the developer and his church partner.
 
+### The Journey
+
+**Learners** (3-4 months):
+
+- Sign up and automatically assigned `learner` role
+- Complete foundational courses through structured video lessons and interactive content
+- Self-paced learning with clear progression path
+- Engage with community feed from day one
+
+**Disciples** (lifetime access):
+
+- Promoted after completing learner foundation courses
+- Gain access to advanced, disciple-only courses that are completely hidden from learners
+- Lifetime access to continuously released deep spiritual content
+- Earn ranks based on spiritual maturity and community contribution
+- Can be followed by other users
+
+---
+
+## Community Features
+
+The platform includes a **social feed system** where:
+
+- Users can post insights, reflections, and questions
+- Learners and disciples can follow other disciples
+- Disciples earn **ranks** that reflect their spiritual growth and contribution
+- Active community engagement throughout the journey (not just during courses)
+- Feed-based interaction encourages fellowship and shared learning
+
+**Current stats:** 10,000+ active learners on the platform
+
 ---
 
 ## Roles & Access Model
 
 There are **three roles** in the system:
 
-| Role       | Description                                                                                               |
-| ---------- | --------------------------------------------------------------------------------------------------------- |
-| `admin`    | Developer + church partner. Full control — manages users, uploads courses, promotes learners to disciples |
-| `learner`  | Default role on signup. Can access standard courses, view lessons, comment on lessons                     |
-| `disciple` | Promoted by admin only. Everything a learner can do + access to disciple-only courses                     |
+| Role       | Description                                                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin`    | Developer + church partner. Full control — manages users, uploads courses, promotes learners to disciples                               |
+| `learner`  | Default role on signup. Can access standard courses, view lessons, comment on lessons, engage in community                              |
+| `disciple` | Promoted by admin only after completing foundation. Access to all learner content + disciple-only courses, earns ranks, can be followed |
 
 **Important rules:**
 
 - Disciple-only courses are **completely hidden** from learners (not locked, not previewed — invisible)
 - Role is assigned automatically as `learner` on signup
-- Only admins can promote a user to `disciple`
+- Only admins can promote a user to `disciple` (after they complete foundation courses)
 - Users **cannot** set or change their own role
+- Disciples can earn ranks through spiritual maturity and contribution
+- Community features (feed, following) are available to all roles
 
 ---
 
@@ -77,19 +110,19 @@ Always suggest writing a new ADR when a significant architectural decision is be
 
 ## Tech Stack
 
-| Layer                     | Technology                                     |
-| ------------------------- | ---------------------------------------------- |
-| Framework                 | Next.js 15 (App Router)                        |
-| Runtime / Package Manager | Bun                                            |
-| Language                  | TypeScript (strict mode)                       |
-| Database                  | PostgreSQL via Neon (serverless)               |
-| ORM                       | Drizzle ORM                                    |
-| Auth                      | Better Auth                                    |
-| UI Components             | shadcn/ui (Radix Mira theme, Mauve base color) |
-| Styling                   | Tailwind CSS                                   |
-| Icons                     | Lucide React                                   |
-| State / Data Fetching     | TanStack Query (client components only)        |
-| File Storage              | AWS S3 or Cloudflare R2 (pending)              |
+| Layer                     | Technology                                                         |
+| ------------------------- | ------------------------------------------------------------------ |
+| Framework                 | Next.js 15 (App Router)                                            |
+| Runtime / Package Manager | Bun                                                                |
+| Language                  | TypeScript (strict mode)                                           |
+| Database                  | PostgreSQL via Neon (serverless)                                   |
+| ORM                       | Drizzle ORM                                                        |
+| Auth                      | Better Auth                                                        |
+| UI Components             | shadcn/ui (Custom theme: Deep Mauve/Purple, Warm Stone, Soft Gold) |
+| Styling                   | Tailwind CSS with CSS variables (OKLCH color space)                |
+| Icons                     | Lucide React                                                       |
+| State / Data Fetching     | TanStack Query (client components only)                            |
+| File Storage              | AWS S3 or Cloudflare R2 (pending)                                  |
 
 ---
 
@@ -109,9 +142,9 @@ pneumademy/
 │   │   ├── api/
 │   │   │   └── auth/[...all]/
 │   │   │       └── route.ts        # Better Auth API handler
-│   │   ├── (auth)/
-│   │   │   ├── login/page.tsx
-│   │   │   └── signup/page.tsx
+│   │   ├── login/page.tsx          # Login page
+│   │   ├── signup/page.tsx         # Sign up page
+│   │   ├── page.tsx                # Landing page (public)
 │   │   ├── (admin)/                # Admin-only route group [pending]
 │   │   ├── (disciple)/             # Disciple-only route group [pending]
 │   │   ├── (learner)/              # Learner route group [pending]
@@ -168,6 +201,9 @@ pneumademy/
 - `enrollments` — userId ↔ courseId
 - `progress` — userId, lessonId, completedAt
 - `comments` — userId, lessonId, body
+- `posts` — userId, content, createdAt (for community feed)
+- `follows` — followerId, followingId (users following disciples)
+- `ranks` — id, name, level, requirements (for disciple ranking system)
 
 ---
 
@@ -222,6 +258,46 @@ if (request.nextUrl.pathname.startsWith("/admin")) {
 - **shadcn/ui for all UI components** — install via `bunx shadcn@latest add [component]`, never build from scratch what shadcn provides
 - **Zod for all validation** — validate at the server action boundary, not just on the client
 - **No inline table name strings** — always use constants from `src/constants/db.tableNames.ts`
+- **NO EMOJIS EVER** — Do not use emojis in code, UI text, comments, documentation, or commit messages. This is a church platform requiring professional, reverent tone.
+
+---
+
+## Design System
+
+The platform uses a carefully curated design system documented in `docs/design-system.md`:
+
+**Color Scheme:**
+
+- **Primary**: Deep Mauve/Purple `#7C3AED` — Used for CTAs, active states, links, primary buttons
+- **Secondary**: Warm Stone/Sandstone `#A8947A` — Used for secondary buttons, borders, subtle backgrounds
+- **Accent**: Soft Gold `#D4A847` — Used for rank badges, achievements, special highlights
+- **Dark Mode Background**: Deep charcoal-mauve `#1A1520`
+- **Theme**: Custom Radix-based theme with CSS variables in OKLCH color space for light/dark mode
+- **Semantic colors**: `background`, `foreground`, `muted`, `primary`, `secondary`, `accent`
+- **Component colors**: Consistent use of `primary/10`, `primary/20` for subtle backgrounds
+
+**Typography:**
+
+- Headings: `text-4xl`, `text-3xl`, `text-xl` with appropriate font weights
+- Body: Default `text-base`, `text-sm` for secondary
+- Muted text: Always use `text-muted-foreground`
+
+**Spacing:**
+
+- Sections: `py-20` standard, `py-20 md:py-32` for hero sections
+- Containers: `container mx-auto px-4`
+- Component gaps: `gap-4`, `gap-8` depending on density
+
+**Design Principles:**
+
+- Spiritual & contemplative atmosphere
+- Clean, spacious layouts
+- No animations/transitions unless essential
+- High contrast for accessibility
+- Professional yet warm tone
+- NO EMOJIS
+
+See `docs/design-system.md` for complete reference.
 
 ---
 
@@ -242,9 +318,11 @@ GOOGLE_CLIENT_SECRET=      # Google OAuth
 - Role-based route groups `(admin)`, `(disciple)`, `(learner)`
 - RBAC middleware extensions in `proxy.ts`
 - Course, lesson, enrollment, progress, comment schemas
+- Community feed schemas (posts, follows, ranks)
 - Admin dashboard (user management, course uploads, role promotion)
 - Learner dashboard (course browsing, lesson viewer, progress)
 - Disciple dashboard (disciple-only content access)
+- Community feed system (post creation, following, ranks display)
 - File/video upload system (S3/R2)
 - TanStack Query provider setup
 - Comment system on lessons
