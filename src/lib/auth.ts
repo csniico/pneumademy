@@ -12,7 +12,7 @@ export const auth = betterAuth({
                 type: "string",
                 required: true,
                 defaultValue: "learner",
-                input: false, // Not required on signup
+                input: false,
             },
             bio: {
                 type: "string",
@@ -21,13 +21,13 @@ export const auth = betterAuth({
             avatarUrl: {
                 type: "string",
                 required: false,
-                fieldName: "avatar_url", // Map to snake_case column
+                fieldName: "avatar_url",
             },
             isActive: {
                 type: "boolean",
                 required: true,
                 defaultValue: true,
-                input: false, // Not required on signup
+                input: false,
             },
         },
     },
