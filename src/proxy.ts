@@ -6,8 +6,11 @@ export default async function authProxy(request: NextRequest) {
     headers: request.headers,
   });
 
-  // Protect dashboard routes
-  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+  // Protect dashboard and admin routes
+  if (
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/admin")
+  ) {
     if (!session) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -19,12 +22,21 @@ export default async function authProxy(request: NextRequest) {
     (request.nextUrl.pathname === "/login" ||
       request.nextUrl.pathname === "/signup")
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const dest = session.user.role === "admin" ? "/admin" : "/dashboard";
+    return NextResponse.redirect(new URL(dest, request.url));
+  }
+
+  // Redirect admins away from /dashboard to /admin
+  if (
+    session?.user.role === "admin" &&
+    request.nextUrl.pathname.startsWith("/dashboard")
+  ) {
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/signup"],
 };

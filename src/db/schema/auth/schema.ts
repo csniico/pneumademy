@@ -19,6 +19,7 @@ export const user = pgTable("user", {
   bio: text("bio"),
   avatar_url: text("avatar_url"),
   isActive: boolean("is_active").default(true).notNull(),
+  isSystemAdmin: boolean("is_system_admin").default(false).notNull(),
 });
 
 export const session = pgTable(

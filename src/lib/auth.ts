@@ -3,13 +3,36 @@ import { admin } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../db";
 import { nextCookies } from "better-auth/next-js";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
 
 export const auth = betterAuth({
     baseURL: process.env.BETTER_AUTH_URL as string,
     database: drizzleAdapter(db, {
         provider: "pg",
     }),
-    emailAndPassword: {enabled: true},
+    emailAndPassword: {
+        enabled: true,
+        sendResetPassword: async ({ user, url }) => {
+            try {
+                await sendPasswordResetEmail(user.email, url);
+            } catch (error) {
+                console.error("[Resend] Failed to send password reset email:", error);
+                throw error;
+            }
+        },
+    },
+    emailVerification: {
+        sendVerificationEmail: async ({ user, url }) => {
+            try {
+                await sendVerificationEmail(user.email, url);
+            } catch (error) {
+                console.error("[Resend] Failed to send verification email:", error);
+                throw error;
+            }
+        },
+        sendOnSignUp: true,
+        callbackURL: "/dashboard",
+    },
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
