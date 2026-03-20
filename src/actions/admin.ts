@@ -20,6 +20,12 @@ export async function setUserRole(
   role: "learner" | "disciple",
 ) {
   await requireAdmin();
+  const [target] = await db
+    .select({ banned: user.banned })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  if (target?.banned) throw new Error("Cannot change role of a banned user.");
   await db.update(user).set({ role }).where(eq(user.id, userId));
   revalidatePath("/admin/users");
 }
@@ -28,9 +34,10 @@ export async function banUser(userId: string, reason?: string) {
   await requireAdmin();
   await db
     .update(user)
-    .set({ banned: true, banReason: reason ?? null })
+    .set({ banned: true, banReason: reason ?? null, isActive: false })
     .where(eq(user.id, userId));
   revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
 }
 
 export async function unbanUser(userId: string) {
@@ -40,6 +47,7 @@ export async function unbanUser(userId: string) {
     .set({ banned: false, banReason: null })
     .where(eq(user.id, userId));
   revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
 }
 
 export async function makeAdmin(userId: string) {
@@ -67,6 +75,12 @@ export async function revokeAdmin(userId: string) {
 
 export async function setActiveStatus(userId: string, isActive: boolean) {
   await requireAdmin();
+  const [target] = await db
+    .select({ banned: user.banned })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  if (target?.banned) throw new Error("Cannot change access of a banned user.");
   await db.update(user).set({ isActive }).where(eq(user.id, userId));
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${userId}`);

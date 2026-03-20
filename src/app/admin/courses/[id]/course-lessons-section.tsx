@@ -3,7 +3,7 @@
 import { useTransition, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createLesson, deleteLesson } from "@/actions/courses";
+import { createLesson } from "@/actions/courses";
 import { cn } from "@/lib/utils";
 import { PlusIcon } from "lucide-react";
 
@@ -32,35 +32,6 @@ function StatusBadge({ status }: { status: string }) {
     >
       {status}
     </span>
-  );
-}
-
-function LessonDeleteButton({
-  lessonId,
-  courseId,
-}: {
-  lessonId: string;
-  courseId: string;
-}) {
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
-
-  const handleDelete = () => {
-    if (!confirm("Delete this lesson? This cannot be undone.")) return;
-    startTransition(async () => {
-      await deleteLesson(lessonId, courseId);
-      router.refresh();
-    });
-  };
-
-  return (
-    <button
-      onClick={handleDelete}
-      disabled={isPending}
-      className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50"
-    >
-      {isPending ? "Deleting…" : "Delete"}
-    </button>
   );
 }
 
@@ -115,9 +86,6 @@ export function CourseLessonsSection({
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -133,24 +101,15 @@ export function CourseLessonsSection({
                     {l.position}
                   </td>
                   <td className="px-4 py-3 font-medium text-foreground">
-                    {l.title}
+                    <Link
+                      href={`/admin/courses/${courseId}/lessons/${l.id}`}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {l.title}
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={l.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/admin/courses/${courseId}/lessons/${l.id}`}
-                        className="rounded-md bg-zinc-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-600"
-                      >
-                        Edit
-                      </Link>
-                      <LessonDeleteButton
-                        lessonId={l.id}
-                        courseId={courseId}
-                      />
-                    </div>
                   </td>
                 </tr>
               ))}
@@ -167,7 +126,7 @@ export function CourseLessonsSection({
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
           <PlusIcon className="h-4 w-4" />
           Add Lesson
@@ -214,7 +173,7 @@ export function CourseLessonsSection({
               <button
                 type="submit"
                 disabled={isPending || !newTitle.trim()}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {isPending ? "Creating…" : "Create Lesson"}
               </button>
@@ -225,7 +184,7 @@ export function CourseLessonsSection({
                   setNewTitle("");
                   setFormError(null);
                 }}
-                className="rounded-md bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600"
+                className="rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80"
               >
                 Cancel
               </button>

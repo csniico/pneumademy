@@ -6,12 +6,11 @@
 
 ## Brand Colors
 
-### Primary: Deep Mauve/Purple
+### Primary: Soft Black / Near White
 
-**Hex:** `#7C3AED` (light mode) / `#6D4C7A` (dark mode variant)  
-**OKLCH:** `oklch(0.488 0.243 264.376)` (light) / `oklch(0.7 0.2 270)` (dark)
+**OKLCH:** `oklch(0.18 0 0)` (light mode) / `oklch(0.93 0 0)` (dark mode)
 
-The platform uses **Deep Mauve/Purple** as the primary brand color, reflecting a spiritual, regal, and contemplative atmosphere appropriate for Christian discipleship.
+A neutral, clean primary — near-black in light mode and near-white in dark mode — for maximum clarity and minimalism.
 
 **Usage:**
 
@@ -20,12 +19,11 @@ The platform uses **Deep Mauve/Purple** as the primary brand color, reflecting a
 - Links and interactive elements
 - Active navigation states
 
-### Secondary: Warm Stone/Sandstone
+### Secondary: Medium Gray
 
-**Hex:** `#A8947A` (light mode) / `#C4A882` (dark mode variant)  
-**OKLCH:** `oklch(0.648 0.045 60)` (light) / `oklch(0.45 0.04 60)` (dark)
+**OKLCH:** `oklch(0.55 0 0)` (light mode) / `oklch(0.40 0 0)` (dark mode)
 
-A warm, earthy tone providing visual grounding and secondary UI elements.
+A neutral gray for supporting UI elements.
 
 **Usage:**
 
@@ -34,19 +32,17 @@ A warm, earthy tone providing visual grounding and secondary UI elements.
 - Subtle backgrounds
 - Supporting visual elements
 
-### Accent: Soft Gold
+### Accent: Light Gray
 
-**Hex:** `#D4A847` (light mode) / `#C9A84C` (dark mode variant)  
-**OKLCH:** `oklch(0.725 0.12 80)` (light) / `oklch(0.7 0.1 75)` (dark)
+**OKLCH:** `oklch(0.80 0 0)` (light mode) / `oklch(0.30 0 0)` (dark mode)
 
-A refined gold accent for highlighting achievements and special content.
+A lighter gray for subtle highlights and hover states.
 
 **Usage:**
 
-- Disciple rank badges
-- Achievement highlights
-- Special markers and notifications
-- Premium content indicators
+- Hover states and subtle backgrounds
+- Icon containers
+- Muted highlights
 
 ---
 
@@ -133,7 +129,7 @@ All icons use contextual colors:
 
 - Clear visual hierarchy with size and weight
 - Consistent spacing using Tailwind's scale
-- Readable typography (default system fonts)
+- Readable typography (Inter sans-serif)
 - High contrast for accessibility
 
 ### No Distractions
@@ -189,6 +185,24 @@ Max Width (centered): max-w-3xl, max-w-5xl
 Card grids: gap-8
 Icon + text: gap-2, gap-3, gap-4
 Sections: Large vertical gaps (mb-8, mb-12)
+```
+
+---
+
+## Sizing
+
+### Input & Button Height
+
+```
+Input fields: 45px
+Buttons: 45px min-height
+```
+
+### Border Radius
+
+```
+Base: 5px (--radius)
+All components use this base or calc() multiples of it
 ```
 
 ---
@@ -267,16 +281,6 @@ The platform fully supports dark mode via Tailwind's `dark:` variants and CSS va
 
 ## Reference: Tailwind Config
 
-The base color is defined in `components.json`:
-
-```json
-{
-  "style": "radix-mira",
-  "tailwind": {
-    "baseColor": "mauve",
-    "cssVariables": true
-  }
-}
-```
-
 CSS variables are defined in `src/app/globals.css` and automatically adapt to light/dark themes.
+
+**Font:** Inter (loaded via `next/font/google`, variable `--font-sans`)

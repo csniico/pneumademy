@@ -9,6 +9,7 @@ import { EditCourseForm } from "./edit-course-form";
 import { CourseLessonsSection } from "./course-lessons-section";
 import { PrerequisitesSelector } from "./prerequisites-selector";
 import { PublishButton } from "./publish-button";
+import { DeleteCourseButton } from "./delete-course-button";
 
 export default async function CourseDetailPage({
   params,
@@ -72,8 +73,9 @@ export default async function CourseDetailPage({
         >
           {courseData.status}
         </span>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           <PublishButton id={courseData.id} status={courseData.status} />
+          <DeleteCourseButton id={courseData.id} title={courseData.title} />
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditLessonForm } from "./edit-lesson-form";
 import { LessonAssetsSection } from "./lesson-assets-section";
+import { DeleteLessonButton } from "./delete-lesson-button";
 
 export default async function LessonDetailPage({
   params,
@@ -63,6 +64,13 @@ export default async function LessonDetailPage({
         >
           {lessonData.status}
         </span>
+        <div className="ml-auto">
+          <DeleteLessonButton
+            lessonId={lessonData.id}
+            courseId={id}
+            title={lessonData.title}
+          />
+        </div>
       </div>
 
       {/* Main grid */}

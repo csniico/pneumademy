@@ -23,25 +23,23 @@ function ActionButton({
   onClick,
   disabled,
   children,
-  color = "zinc",
+  variant = "secondary",
 }: {
   onClick: () => void;
   disabled: boolean;
   children: React.ReactNode;
-  color?: "zinc" | "blue" | "amber" | "red" | "green";
+  variant?: "primary" | "secondary" | "destructive";
 }) {
-  const colors = {
-    zinc: "bg-zinc-700 hover:bg-zinc-600 text-white",
-    blue: "bg-blue-600 hover:bg-blue-500 text-white",
-    amber: "bg-amber-600 hover:bg-amber-500 text-white",
-    red: "bg-red-700 hover:bg-red-600 text-white",
-    green: "bg-green-700 hover:bg-green-600 text-white",
+  const variants = {
+    primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    destructive: "bg-destructive text-white hover:bg-destructive/90",
   };
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-md px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${colors[color]}`}
+      className={`w-full rounded-md px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]}`}
     >
       {children}
     </button>
@@ -77,6 +75,23 @@ export function UserProfileActions({ user }: { user: User }) {
 
   const isPromotedAdmin = user.role === "admin";
 
+  if (user.banned) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          This user is banned. Unban them to restore access and modify their role.
+        </p>
+        <ActionButton
+          variant="primary"
+          disabled={isPending}
+          onClick={() => run(() => unbanUser(user.id))}
+        >
+          Unban User
+        </ActionButton>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       {/* Role */}
@@ -85,7 +100,7 @@ export function UserProfileActions({ user }: { user: User }) {
         <div className="flex flex-col gap-2">
           {isPromotedAdmin ? (
             <ActionButton
-              color="amber"
+              variant="secondary"
               disabled={isPending}
               onClick={() => run(() => revokeAdmin(user.id))}
             >
@@ -95,7 +110,7 @@ export function UserProfileActions({ user }: { user: User }) {
             <>
               {user.role === "learner" ? (
                 <ActionButton
-                  color="blue"
+                  variant="primary"
                   disabled={isPending}
                   onClick={() => run(() => setUserRole(user.id, "disciple"))}
                 >
@@ -103,7 +118,7 @@ export function UserProfileActions({ user }: { user: User }) {
                 </ActionButton>
               ) : (
                 <ActionButton
-                  color="zinc"
+                  variant="secondary"
                   disabled={isPending}
                   onClick={() => run(() => setUserRole(user.id, "learner"))}
                 >
@@ -111,7 +126,7 @@ export function UserProfileActions({ user }: { user: User }) {
                 </ActionButton>
               )}
               <ActionButton
-                color="amber"
+                variant="secondary"
                 disabled={isPending}
                 onClick={() => run(() => makeAdmin(user.id))}
               >
@@ -129,30 +144,19 @@ export function UserProfileActions({ user }: { user: User }) {
         <SectionLabel>Access</SectionLabel>
         <div className="flex flex-col gap-2">
           <ActionButton
-            color={user.isActive ? "zinc" : "green"}
+            variant={user.isActive ? "secondary" : "primary"}
             disabled={isPending}
             onClick={() => run(() => setActiveStatus(user.id, !user.isActive))}
           >
             {user.isActive ? "Disable Access" : "Enable Access"}
           </ActionButton>
-
-          {user.banned ? (
-            <ActionButton
-              color="green"
-              disabled={isPending}
-              onClick={() => run(() => unbanUser(user.id))}
-            >
-              Unban User
-            </ActionButton>
-          ) : (
-            <ActionButton
-              color="red"
-              disabled={isPending}
-              onClick={() => run(() => banUser(user.id))}
-            >
-              Ban User
-            </ActionButton>
-          )}
+          <ActionButton
+            variant="destructive"
+            disabled={isPending}
+            onClick={() => run(() => banUser(user.id))}
+          >
+            Ban User
+          </ActionButton>
         </div>
       </div>
     </div>

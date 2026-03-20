@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { course, lesson } from "@/db/schema/courses/schema";
 import { count, asc, eq } from "drizzle-orm";
 import { cn } from "@/lib/utils";
-import { CourseRowActions } from "./course-row-actions";
 import { PlusIcon } from "lucide-react";
 
 function StatusBadge({ status }: { status: string }) {
@@ -73,7 +72,7 @@ export default async function AdminCoursesPage() {
         </div>
         <Link
           href="/admin/courses/new"
-          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
           <PlusIcon className="h-4 w-4" />
           New Course
@@ -102,9 +101,6 @@ export default async function AdminCoursesPage() {
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                 Created
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Actions
               </th>
             </tr>
           </thead>
@@ -143,9 +139,6 @@ export default async function AdminCoursesPage() {
                     day: "numeric",
                     year: "numeric",
                   })}
-                </td>
-                <td className="px-4 py-3">
-                  <CourseRowActions id={c.id} title={c.title} />
                 </td>
               </tr>
             ))}

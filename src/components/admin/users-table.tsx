@@ -1,9 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
 import Link from "next/link";
-import { setUserRole, banUser, unbanUser } from "@/actions/admin";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type User = {
@@ -50,70 +47,6 @@ function StatusBadge({ banned }: { banned: boolean | null }) {
   );
 }
 
-function UserActions({ user }: { user: User }) {
-  const [isPending, startTransition] = useTransition();
-
-  const handleRoleChange = (role: "learner" | "disciple") => {
-    startTransition(() => setUserRole(user.id, role));
-  };
-
-  const handleBan = () => {
-    startTransition(() => banUser(user.id));
-  };
-
-  const handleUnban = () => {
-    startTransition(() => unbanUser(user.id));
-  };
-
-  if (user.role === "admin") {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      {user.role === "learner" ? (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isPending}
-          onClick={() => handleRoleChange("disciple")}
-        >
-          Promote
-        </Button>
-      ) : (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isPending}
-          onClick={() => handleRoleChange("learner")}
-        >
-          Demote
-        </Button>
-      )}
-
-      {user.banned ? (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isPending}
-          onClick={handleUnban}
-        >
-          Unban
-        </Button>
-      ) : (
-        <Button
-          size="sm"
-          variant="outline"
-          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-          disabled={isPending}
-          onClick={handleBan}
-        >
-          Ban
-        </Button>
-      )}
-    </div>
-  );
-}
 
 export function UsersTable({ users }: { users: User[] }) {
   return (
@@ -135,9 +68,6 @@ export function UsersTable({ users }: { users: User[] }) {
             </th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
               Joined
-            </th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Actions
             </th>
           </tr>
         </thead>
@@ -171,9 +101,6 @@ export function UsersTable({ users }: { users: User[] }) {
                   day: "numeric",
                   year: "numeric",
                 })}
-              </td>
-              <td className="px-4 py-3">
-                <UserActions user={user} />
               </td>
             </tr>
           ))}
