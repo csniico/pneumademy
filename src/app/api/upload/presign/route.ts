@@ -37,6 +37,14 @@ export async function POST(req: NextRequest) {
     key = s3Keys.html(courseId, `${lessonId}.html`);
   }
 
-  const url = await getPresignedUploadUrl({ key, contentType });
-  return NextResponse.json({ url, key });
+  try {
+    const url = await getPresignedUploadUrl({ key, contentType });
+    return NextResponse.json({ url, key });
+  } catch (err) {
+    console.error("[presign] S3 error:", err);
+    return NextResponse.json(
+      { error: "Failed to generate upload URL. Check S3 configuration." },
+      { status: 500 },
+    );
+  }
 }

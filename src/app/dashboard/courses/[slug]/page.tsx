@@ -62,29 +62,62 @@ export default async function CourseDetailPage({
         );
     }
 
-    // Prerequisite check
-    const prereqs = await db
-        .select({ prerequisiteId: coursePrerequisite.prerequisiteId })
-        .from(coursePrerequisite)
-        .where(eq(coursePrerequisite.courseId, courseData.id));
+    // Parallel fetch: prereqs + enrollment + lessons
+    const [prereqs, enrollmentResults, lessons] = await Promise.all([
+        db
+            .select({ prerequisiteId: coursePrerequisite.prerequisiteId })
+            .from(coursePrerequisite)
+            .where(eq(coursePrerequisite.courseId, courseData.id)),
+        db
+            .select()
+            .from(enrollment)
+            .where(and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseData.id)))
+            .limit(1),
+        db
+            .select()
+            .from(lesson)
+            .where(and(eq(lesson.courseId, courseData.id), eq(lesson.status, "published")))
+            .orderBy(asc(lesson.position)),
+    ]);
 
     const prereqIds = prereqs.map((p) => p.prerequisiteId);
+    const [enrollmentData] = enrollmentResults;
+    const isEnrolled = !!enrollmentData;
 
     let prereqsMet = true;
     let unmetPrereqTitles: string[] = [];
 
-    if (prereqIds.length > 0) {
-        const completedPrereqs = await db
-            .select({ courseId: enrollment.courseId })
-            .from(enrollment)
-            .where(
-                and(
-                    eq(enrollment.userId, userId),
-                    isNotNull(enrollment.completedAt),
-                    inArray(enrollment.courseId, prereqIds),
-                ),
-            );
+    // Parallel fetch: completed prereqs + completed lessons
+    const [completedPrereqs, completedLessons] = await Promise.all([
+        prereqIds.length > 0
+            ? db
+                  .select({ courseId: enrollment.courseId })
+                  .from(enrollment)
+                  .where(
+                      and(
+                          eq(enrollment.userId, userId),
+                          isNotNull(enrollment.completedAt),
+                          inArray(enrollment.courseId, prereqIds),
+                      ),
+                  )
+            : Promise.resolve([]),
+        lessons.length > 0
+            ? db
+                  .select({ lessonId: lessonProgress.lessonId })
+                  .from(lessonProgress)
+                  .where(
+                      and(
+                          eq(lessonProgress.userId, userId),
+                          inArray(
+                              lessonProgress.lessonId,
+                              lessons.map((l) => l.id),
+                          ),
+                      ),
+                  )
+            : Promise.resolve([]),
+    ]);
 
+    if (prereqIds.length > 0) {
         const completedIds = new Set(completedPrereqs.map((e) => e.courseId));
         const unmetIds = prereqIds.filter((id) => !completedIds.has(id));
 
@@ -97,41 +130,6 @@ export default async function CourseDetailPage({
             unmetPrereqTitles = unmetCourses.map((c) => c.title);
         }
     }
-
-    // Enrollment status
-    const [enrollmentData] = await db
-        .select()
-        .from(enrollment)
-        .where(
-            and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseData.id)),
-        )
-        .limit(1);
-
-    const isEnrolled = !!enrollmentData;
-
-    // Lessons
-    const lessons = await db
-        .select()
-        .from(lesson)
-        .where(and(eq(lesson.courseId, courseData.id), eq(lesson.status, "published")))
-        .orderBy(asc(lesson.position));
-
-    // Completed lessons for this user
-    const completedLessons =
-        lessons.length > 0
-            ? await db
-                  .select({ lessonId: lessonProgress.lessonId })
-                  .from(lessonProgress)
-                  .where(
-                      and(
-                          eq(lessonProgress.userId, userId),
-                          inArray(
-                              lessonProgress.lessonId,
-                              lessons.map((l) => l.id),
-                          ),
-                      ),
-                  )
-            : [];
 
     const completedLessonIds = new Set(completedLessons.map((p) => p.lessonId));
     const completedCount = completedLessonIds.size;

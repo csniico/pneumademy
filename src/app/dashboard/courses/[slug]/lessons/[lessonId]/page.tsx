@@ -34,64 +34,87 @@ export default async function LessonViewerPage({
 
     const userId = session.user.id;
 
-    // Load course by slug
-    const [courseData] = await db
-        .select()
-        .from(course)
-        .where(and(eq(course.slug, slug), eq(course.status, "published")))
-        .limit(1);
+    // Parallel fetch: course (by slug) + assets + progress — assets/progress only need lessonId/userId
+    const [courseResults, assetResults, progressResults] = await Promise.all([
+        db
+            .select()
+            .from(course)
+            .where(and(eq(course.slug, slug), eq(course.status, "published")))
+            .limit(1),
+        db
+            .select()
+            .from(lessonAsset)
+            .where(eq(lessonAsset.lessonId, lessonId))
+            .orderBy(asc(lessonAsset.createdAt)),
+        db
+            .select()
+            .from(lessonProgress)
+            .where(
+                and(
+                    eq(lessonProgress.userId, userId),
+                    eq(lessonProgress.lessonId, lessonId),
+                ),
+            )
+            .limit(1),
+    ]);
 
+    const [courseData] = courseResults;
     if (!courseData) notFound();
 
-    // Load lesson, verify it belongs to this course
-    const [lessonData] = await db
-        .select()
-        .from(lesson)
-        .where(
-            and(
-                eq(lesson.id, lessonId),
-                eq(lesson.courseId, courseData.id),
-                eq(lesson.status, "published"),
-            ),
-        )
-        .limit(1);
+    // Parallel fetch: lesson verification + enrollment check + all lessons for nav
+    const [lessonResults, enrollmentResults, allLessons] = await Promise.all([
+        db
+            .select()
+            .from(lesson)
+            .where(
+                and(
+                    eq(lesson.id, lessonId),
+                    eq(lesson.courseId, courseData.id),
+                    eq(lesson.status, "published"),
+                ),
+            )
+            .limit(1),
+        db
+            .select()
+            .from(enrollment)
+            .where(
+                and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseData.id)),
+            )
+            .limit(1),
+        db
+            .select({ id: lesson.id, title: lesson.title, position: lesson.position })
+            .from(lesson)
+            .where(and(eq(lesson.courseId, courseData.id), eq(lesson.status, "published")))
+            .orderBy(asc(lesson.position)),
+    ]);
 
+    const [lessonData] = lessonResults;
     if (!lessonData) notFound();
 
-    // Must be enrolled
-    const [enrollmentData] = await db
-        .select()
-        .from(enrollment)
-        .where(
-            and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseData.id)),
-        )
-        .limit(1);
-
+    const [enrollmentData] = enrollmentResults;
     if (!enrollmentData) redirect(`/dashboard/courses/${slug}`);
 
-    // Assets for this lesson
-    const assets = await db
-        .select()
-        .from(lessonAsset)
-        .where(eq(lessonAsset.lessonId, lessonId))
-        .orderBy(asc(lessonAsset.createdAt));
-
-    // Generate presigned URLs for each asset
+    // Generate presigned URLs — wrapped per-asset so one failure doesn't crash the page
     const assetsWithUrls = await Promise.all(
-        assets.map(async (asset) => {
-            // Video and audio: long-lived URL for streaming (1 hour)
-            // HTML: short URL — we fetch the content immediately below
-            const url = await getPresignedReadUrl(asset.s3Key, 3600);
-            return { ...asset, url };
+        assetResults.map(async (asset) => {
+            try {
+                const url = await getPresignedReadUrl(asset.s3Key, 3600);
+                return { ...asset, url };
+            } catch {
+                return { ...asset, url: null };
+            }
         }),
     );
 
-    // Fetch HTML content server-side
+    // Fetch HTML content server-side with a 10-second timeout
     const assetsWithContent = await Promise.all(
         assetsWithUrls.map(async (asset) => {
-            if (asset.type !== "html") return { ...asset, htmlContent: null };
+            if (asset.type !== "html" || !asset.url) return { ...asset, htmlContent: null };
             try {
-                const res = await fetch(asset.url);
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10_000);
+                const res = await fetch(asset.url, { signal: controller.signal });
+                clearTimeout(timeout);
                 const htmlContent = await res.text();
                 return { ...asset, htmlContent };
             } catch {
@@ -100,31 +123,12 @@ export default async function LessonViewerPage({
         }),
     );
 
-    // All published lessons in this course (for prev/next)
-    const allLessons = await db
-        .select({ id: lesson.id, title: lesson.title, position: lesson.position })
-        .from(lesson)
-        .where(and(eq(lesson.courseId, courseData.id), eq(lesson.status, "published")))
-        .orderBy(asc(lesson.position));
-
     const currentIndex = allLessons.findIndex((l) => l.id === lessonId);
     const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
     const nextLesson =
         currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-    // Completion status
-    const [progressRow] = await db
-        .select()
-        .from(lessonProgress)
-        .where(
-            and(
-                eq(lessonProgress.userId, userId),
-                eq(lessonProgress.lessonId, lessonId),
-            ),
-        )
-        .limit(1);
-
-    const isCompleted = !!progressRow;
+    const isCompleted = progressResults.length > 0;
 
     return (
         <div className="p-8">
@@ -167,7 +171,7 @@ export default async function LessonViewerPage({
                 <div className="mb-8 space-y-6">
                     {assetsWithContent.map((asset) => (
                         <div key={asset.id}>
-                            {asset.type === "video" && (
+                            {asset.type === "video" && asset.url && (
                                 <div className="overflow-hidden rounded-lg border bg-black">
                                     <video
                                         controls
@@ -190,7 +194,7 @@ export default async function LessonViewerPage({
                                 </div>
                             )}
 
-                            {asset.type === "audio" && (
+                            {asset.type === "audio" && asset.url && (
                                 <div className="rounded-lg border bg-background p-4">
                                     <p className="mb-2 text-xs text-muted-foreground">
                                         {asset.filename}
@@ -209,6 +213,14 @@ export default async function LessonViewerPage({
                                         className="lesson-content text-sm leading-relaxed text-foreground"
                                         dangerouslySetInnerHTML={{ __html: asset.htmlContent }}
                                     />
+                                </div>
+                            )}
+
+                            {(asset.url === null) && (
+                                <div className="rounded-lg border border-dashed bg-muted/10 p-6 text-center">
+                                    <p className="text-sm text-muted-foreground">
+                                        This asset could not be loaded.
+                                    </p>
                                 </div>
                             )}
                         </div>

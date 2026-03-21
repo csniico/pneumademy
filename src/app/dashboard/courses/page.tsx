@@ -28,40 +28,30 @@ export default async function CoursesPage() {
 
     const courseIds = allCourses.map((c) => c.id);
 
-    const userEnrollments =
+    const [userEnrollments, lessonCounts, completedCounts, prerequisites] =
         courseIds.length > 0
-            ? await db
-                  .select({ courseId: enrollment.courseId, completedAt: enrollment.completedAt })
-                  .from(enrollment)
-                  .where(and(eq(enrollment.userId, userId), inArray(enrollment.courseId, courseIds)))
-            : [];
-
-    const lessonCounts =
-        courseIds.length > 0
-            ? await db
-                  .select({ courseId: lesson.courseId, total: count() })
-                  .from(lesson)
-                  .where(and(inArray(lesson.courseId, courseIds), eq(lesson.status, "published")))
-                  .groupBy(lesson.courseId)
-            : [];
-
-    const completedCounts =
-        courseIds.length > 0
-            ? await db
-                  .select({ courseId: lesson.courseId, done: count() })
-                  .from(lessonProgress)
-                  .innerJoin(lesson, eq(lessonProgress.lessonId, lesson.id))
-                  .where(and(eq(lessonProgress.userId, userId), inArray(lesson.courseId, courseIds)))
-                  .groupBy(lesson.courseId)
-            : [];
-
-    const prerequisites =
-        courseIds.length > 0
-            ? await db
-                  .select({ courseId: coursePrerequisite.courseId, prerequisiteId: coursePrerequisite.prerequisiteId })
-                  .from(coursePrerequisite)
-                  .where(inArray(coursePrerequisite.courseId, courseIds))
-            : [];
+            ? await Promise.all([
+                  db
+                      .select({ courseId: enrollment.courseId, completedAt: enrollment.completedAt })
+                      .from(enrollment)
+                      .where(and(eq(enrollment.userId, userId), inArray(enrollment.courseId, courseIds))),
+                  db
+                      .select({ courseId: lesson.courseId, total: count() })
+                      .from(lesson)
+                      .where(and(inArray(lesson.courseId, courseIds), eq(lesson.status, "published")))
+                      .groupBy(lesson.courseId),
+                  db
+                      .select({ courseId: lesson.courseId, done: count() })
+                      .from(lessonProgress)
+                      .innerJoin(lesson, eq(lessonProgress.lessonId, lesson.id))
+                      .where(and(eq(lessonProgress.userId, userId), inArray(lesson.courseId, courseIds)))
+                      .groupBy(lesson.courseId),
+                  db
+                      .select({ courseId: coursePrerequisite.courseId, prerequisiteId: coursePrerequisite.prerequisiteId })
+                      .from(coursePrerequisite)
+                      .where(inArray(coursePrerequisite.courseId, courseIds)),
+              ])
+            : [[], [], [], []];
 
     const enrolledSet = new Set(userEnrollments.map((e) => e.courseId));
     const completedSet = new Set(

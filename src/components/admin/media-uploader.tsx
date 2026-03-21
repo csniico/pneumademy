@@ -55,8 +55,8 @@ export function MediaUploader({
     });
 
     if (!presignRes.ok) {
-      const { error: msg } = await presignRes.json();
-      setError(msg ?? "Failed to get upload URL.");
+      const body = await presignRes.json().catch(() => ({}));
+      setError((body as { error?: string }).error ?? "Failed to get upload URL.");
       setProgress(null);
       return;
     }

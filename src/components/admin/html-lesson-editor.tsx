@@ -83,8 +83,8 @@ export function HtmlLessonEditor({
       });
 
       if (!presignRes.ok) {
-        const { error: msg } = await presignRes.json();
-        throw new Error(msg ?? "Failed to get upload URL.");
+        const body = await presignRes.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? "Failed to get upload URL.");
       }
 
       const { url, key } = await presignRes.json();
